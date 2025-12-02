@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Recuento Seguros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4a7c2b" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --verde-claro: #a6d96a;
+      --verde-oscuro: #4a7c2b;
+      --rojo: #e4573d;
+      --gris-fondo: #f5f5f5;
+      --negro: #111;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--gris-fondo);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 16px 16px 24px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 18px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 3px solid #000;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .button-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .circle-btn {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 4px solid var(--verde-oscuro);
+      background: radial-gradient(circle at 30% 30%, #c8f28e, var(--verde-claro));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .circle-btn:active {
+      transform: scale(0.96) translateY(1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .circle-btn span.count {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .label {
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .actions-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 24px;
+      margin-top: 4px;
+    }
+
+    .undo-btn,
+    .clear-btn {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+      user-select: none;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .undo-btn:active,
+    .clear-btn:active {
+      transform: scale(0.96) translateY(1px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+    }
+
+    .undo-btn {
+      background: radial-gradient(circle at 30% 30%, #c8f28e, var(--verde-claro));
+      border: 4px solid var(--verde-oscuro);
+    }
+
+    .undo-arrow {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .clear-btn {
+      background: radial-gradient(circle at 30% 30%, #ff8b6b, var(--rojo));
+      border: 4px solid #a12917;
+      color: white;
+    }
+
+    .totals {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .total-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .total-label {
+      font-size: 1rem;
+    }
+
+    .total-box {
+      min-width: 120px;
+      padding: 6px 12px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border-radius: 999px;
+      border: 3px solid #000;
+      background: #fff;
+    }
+
+    #objetivo-box.ok {
+      color: #0c7c0c;
+      border-color: #0c7c0c;
+    }
+
+    #objetivo-box.bad {
+      color: #b00020;
+      border-color: #b00020;
+    }
+
+    .hint {
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: #555;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 380px) {
+      .circle-btn {
+        width: 86px;
+        height: 86px;
+      }
+      .circle-btn span.count {
+        font-size: 1.8rem;
+      }
+      .undo-btn,
+      .clear-btn {
+        width: 96px;
+        height: 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="title">RECUENTO SEGUROS</div>
+
+    <div class="grid" id="buttons-grid">
+      <!-- Los botones se generan desde JS -->
+    </div>
+
+    <div class="actions-row">
+      <button class="undo-btn" id="undo-btn">
+        <div class="undo-arrow">⬅️</div>
+        <div>Deshacer</div>
+      </button>
+      <button class="clear-btn" id="clear-btn">
+        <div>Borrar</div>
+        <div>todo</div>
+      </button>
+    </div>
+
+    <div class="totals">
+      <div class="total-row">
+        <div class="total-label">Total unidades</div>
+        <div class="total-box" id="total-unidades-box">0</div>
+      </div>
+      <div class="total-row">
+        <div class="total-label">Presentados</div>
+        <div class="total-box" id="presentados-box">0</div>
+      </div>
+      <div class="total-row">
+        <div class="total-label">Objetivo</div>
+        <div class="total-box" id="objetivo-box">+0</div>
+      </div>
+    </div>
+
+    <div class="hint">
+      Objetivo calculado como en tu Excel: <br />
+      <strong>Objetivo = 2 × Presentados − Total unidades</strong><br />
+      Si es positivo estás por encima del 50 %.
+    </div>
+  </div>
+
+  <script>
+    // --- CONFIGURACIÓN PRINCIPAL -------------------------------------
+
+    const BUTTONS = [
+      { key: "acompanado", label: "Acompañado" },
+      { key: "noLoQuiere", label: "No lo quiere" },
+      { key: "ticket", label: "ticket" },
+      { key: "extranjero", label: "Extranjero" },
+      { key: "rescicion", label: "Rescisión" },
+      { key: "abono", label: "Abono" },
+      { key: "factura", label: "Factura" },
+      { key: "regalo", label: "Regalo" }
+    ];
+
+    const UNITS_KEYS = BUTTONS.map(b => b.key); // Todos suman a "Total unidades"
+
+    // De momento solo Acompañado cuenta como "Presentado"
+    const PRESENTED_KEYS = ["acompanado"];
+
+    const STORAGE_KEY = "segurosCounter_v1";
+
+    let state = {
+      counts: {},
+      history: []
+    };
+
+    function initState() {
+      state.counts = {};
+      BUTTONS.forEach(b => {
+        state.counts[b.key] = 0;
+      });
+      state.history = [];
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        initState();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.counts) {
+          initState();
+          return;
+        }
+        initState();
+        Object.keys(state.counts).forEach(key => {
+          if (key in parsed.counts) {
+            const value = parsed.counts[key];
+            state.counts[key] =
+              typeof value === "number" && value >= 0 ? value : 0;
+          }
+        });
+        state.history = Array.isArray(parsed.history) ? parsed.history : [];
+      } catch (e) {
+        console.error("Error cargando estado:", e);
+        initState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function computeTotals() {
+      let totalUnits = 0;
+      let presented = 0;
+
+      UNITS_KEYS.forEach(key => {
+        totalUnits += state.counts[key] || 0;
+      });
+
+      PRESENTED_KEYS.forEach(key => {
+        presented += state.counts[key] || 0;
+      });
+
+      const objetivo = 2 * presented - totalUnits;
+      return { totalUnits, presented, objetivo };
+    }
+
+    function renderButtons() {
+      const grid = document.getElementById("buttons-grid");
+      grid.innerHTML = "";
+
+      BUTTONS.forEach(btn => {
+        const card = document.createElement("div");
+        card.className = "button-card";
+
+        const circle = document.createElement("div");
+        circle.className = "circle-btn";
+        circle.dataset.key = btn.key;
+
+        const span = document.createElement("span");
+        span.className = "count";
+        span.textContent = state.counts[btn.key] ?? 0;
+
+        circle.appendChild(span);
+
+        circle.addEventListener("click", () => {
+          increment(btn.key);
+        });
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = btn.label;
+
+        card.appendChild(circle);
+        card.appendChild(label);
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderTotals() {
+      const { totalUnits, presented, objetivo } = computeTotals();
+
+      const totalBox = document.getElementById("total-unidades-box");
+      const presentadosBox = document.getElementById("presentados-box");
+      const objetivoBox = document.getElementById("objetivo-box");
+
+      totalBox.textContent = totalUnits;
+      presentadosBox.textContent = presented;
+
+      objetivoBox.textContent = (objetivo >= 0 ? "+" : "") + objetivo;
+      objetivoBox.classList.toggle("ok", objetivo >= 0);
+      objetivoBox.classList.toggle("bad", objetivo < 0);
+    }
+
+    function render() {
+      BUTTONS.forEach(btn => {
+        const el = document.querySelector(
+          `.circle-btn[data-key="${btn.key}"] span.count`
+        );
+        if (el) el.textContent = state.counts[btn.key] ?? 0;
+      });
+      renderTotals();
+    }
+
+    function increment(key) {
+      if (!(key in state.counts)) return;
+      state.counts[key] += 1;
+      state.history.push(key);
+      saveState();
+      render();
+    }
+
+    function undoLast() {
+      if (state.history.length === 0) return;
+      const key = state.history.pop();
+      if (key && state.counts[key] > 0) {
+        state.counts[key] -= 1;
+      }
+      saveState();
+      render();
+    }
+
+    function clearAll() {
+      const ok = confirm(
+        "¿Seguro que quieres borrar TODOS los datos y empezar de cero?"
+      );
+      if (!ok) return;
+
+      initState();
+      saveState();
+      render();
+    }
+
+    function main() {
+      loadState();
+      renderButtons();
+      renderTotals();
+
+      document.getElementById("undo-btn").addEventListener("click", undoLast);
+      document.getElementById("clear-btn").addEventListener("click", clearAll);
+
+      // Registrar service worker para PWA
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("./service-worker.js")
+          .catch(err => console.error("SW error:", err));
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", main);
+  </script>
+</body>
+</html>
