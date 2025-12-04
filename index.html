@@ -13,6 +13,8 @@
       --verde-oscuro: #4a7c2b;
       --naranja-claro: #ffd08a;
       --naranja-oscuro: #d98b00;
+      --amarillo-claro: #ffe18a;
+      --amarillo-oscuro: #cfa12a;
       --rojo: #e4573d;
       --gris-fondo: #f5f5f5;
     }
@@ -55,6 +57,32 @@
       margin-bottom: 24px;
     }
 
+    .presentado-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .minus-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--amarillo-claro), var(--amarillo-oscuro));
+      border: 4px solid var(--verde-oscuro);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      user-select: none;
+      margin-right: -18px; /* solapado con el círculo grande */
+      z-index: 1;
+      transition: transform 0.1s ease;
+    }
+
+    .minus-btn:active { transform: scale(0.95); }
+
     .presentado-btn {
       width: 150px;
       height: 150px;
@@ -70,9 +98,7 @@
       transition: transform 0.1s ease;
     }
 
-    .presentado-btn:active {
-      transform: scale(0.95);
-    }
+    .presentado-btn:active { transform: scale(0.95); }
 
     .presentado-btn .count {
       font-size: 2.4rem;
@@ -89,7 +115,7 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .button-card {
@@ -98,6 +124,33 @@
       align-items: center;
       gap: 6px;
     }
+
+    .button-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .small-minus {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--amarillo-claro), var(--amarillo-oscuro));
+      border: 4px solid var(--verde-oscuro);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      margin-right: -16px;
+      z-index: 1;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+      transition: transform 0.1s ease;
+    }
+
+    .small-minus:active { transform: scale(0.95); }
 
     .circle-btn {
       width: 96px;
@@ -110,6 +163,7 @@
       justify-content: center;
       cursor: pointer;
       transition: transform 0.1s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.16);
     }
 
     .circle-btn:active { transform: scale(0.95); }
@@ -119,19 +173,18 @@
       font-weight: 600;
     }
 
-    .label { font-size: 0.85rem; }
+    .label { font-size: 0.85rem; text-align: center; }
 
-    /* ---- BOTONES DESHACER Y BORRAR ---- */
+    /* ---- BOTÓN BORRAR ---- */
     .actions-row {
       display: flex;
       justify-content: center;
-      gap: 20px;
       margin-bottom: 28px;
     }
 
-    .undo-btn, .clear-btn {
-      width: 110px;
-      height: 110px;
+    .clear-btn {
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
       border: none;
       cursor: pointer;
@@ -140,22 +193,16 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: center;
       gap: 4px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    .undo-btn {
-      background: radial-gradient(circle at 30% 30%, #c8f28e, var(--verde-claro));
-      border: 4px solid var(--verde-oscuro);
-    }
-
-    .undo-arrow { font-size: 2.4rem; }
-
-    .clear-btn {
       background: radial-gradient(circle at 30% 30%, #ff8b6b, var(--rojo));
       border: 4px solid #a12a1a;
       color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: transform 0.1s ease;
     }
+
+    .clear-btn:active { transform: scale(0.95); }
 
     /* ---- TOTALES ---- */
     .totals {
@@ -189,26 +236,29 @@
   <div class="app">
     <div class="title">RECUENTO SEGUROS</div>
 
-    <!-- BOTÓN PRESENTADO -->
+    <!-- BOTÓN PRESENTADO CON "-" -->
     <div class="presentado-container">
-      <div class="presentado-btn" id="btn-presentado">
-        <span class="count" id="count-presentado">0</span>
-        <span class="label">Presentado</span>
+      <div class="presentado-wrapper">
+        <div class="minus-btn" id="minus-presentado">−</div>
+        <div class="presentado-btn" id="btn-presentado">
+          <span class="count" id="count-presentado">0</span>
+          <span class="label">Presentado</span>
+        </div>
       </div>
     </div>
 
     <!-- RESTO DE BOTONES -->
     <div class="grid" id="buttons-grid"></div>
 
+    <!-- BORRAR TODO -->
     <div class="actions-row">
-      <button class="undo-btn" id="undo-btn">
-        <div class="undo-arrow">⬅️</div>
-        <div>Deshacer</div>
+      <button class="clear-btn" id="clear-btn">
+        <div>Borrar</div>
+        <div>todo</div>
       </button>
-
-      <button class="clear-btn" id="clear-btn">Borrar todo</button>
     </div>
 
+    <!-- TOTALES -->
     <div class="totals">
       <div class="total-row">
         <div>Total unidades</div>
@@ -228,40 +278,47 @@
   </div>
 
 <script>
-/* ---- CONFIGURACIÓN --- */
+/* ---- CONFIGURACIÓN ---- */
 
+// Botones "normales" (naranja)
 const buttons = [
-  { key: "noLoQuiere", label: "No lo quiere" },
-  { key: "ticket", label: "Ticket" },
-  { key: "extranjero", label: "Extranjero" },
-  { key: "rescicion", label: "Rescisión" },
-  { key: "abono", label: "Abono" },
-  { key: "factura", label: "Factura" },
-  { key: "regalo", label: "Regalo" }
+  { key: "noPresentado", label: "No presentado" },
+  { key: "reserva",      label: "Reserva" },
+  { key: "noLoQuiere",   label: "No lo quiere" },
+  { key: "ticket",       label: "Ticket" },
+  { key: "extranjero",   label: "Extranjero" },
+  { key: "rescicion",    label: "Rescisión" },
+  { key: "abono",        label: "Abono" },
+  { key: "factura",      label: "Factura" },
+  { key: "regalo",       label: "Regalo" }
 ];
 
+// Todos estos + presentado cuentan como unidades
 const UNITS_KEYS = ["presentado", ...buttons.map(b => b.key)];
+// Solo el botón "Presentado" cuenta como presentados
 const PRESENTED_KEYS = ["presentado"];
-const STORAGE_KEY = "segurosCounter_v2";
+
+const STORAGE_KEY = "segurosCounter_v3";
 
 let state = { counts: {}, history: [] };
 
 function initState() {
   state.counts = { presentado: 0 };
   buttons.forEach(b => state.counts[b.key] = 0);
-  state.history = [];
+  state.history = []; // ya no usamos deshacer, pero lo dejamos vacío
 }
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return initState();
+  if (!raw) { initState(); return; }
   try {
     const parsed = JSON.parse(raw);
     initState();
     Object.keys(state.counts).forEach(k => {
-      if (parsed.counts?.[k] >= 0) state.counts[k] = parsed.counts[k];
+      if (parsed.counts && typeof parsed.counts[k] === "number" && parsed.counts[k] >= 0) {
+        state.counts[k] = parsed.counts[k];
+      }
     });
-    state.history = parsed.history || [];
   } catch {
     initState();
   }
@@ -271,20 +328,20 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-/* ---- CÁLCULOS --- */
+/* ---- CÁLCULOS ---- */
 
 function computeTotals() {
   let totalUnits = 0;
   let presented = 0;
 
-  UNITS_KEYS.forEach(k => totalUnits += state.counts[k] || 0);
-  PRESENTED_KEYS.forEach(k => presented += state.counts[k] || 0);
+  UNITS_KEYS.forEach(k => { totalUnits += state.counts[k] || 0; });
+  PRESENTED_KEYS.forEach(k => { presented += state.counts[k] || 0; });
 
   const objetivo = 2 * presented - totalUnits;
   return { totalUnits, presented, objetivo };
 }
 
-/* ---- RENDER --- */
+/* ---- RENDER ---- */
 
 function renderButtons() {
   const grid = document.getElementById("buttons-grid");
@@ -294,22 +351,32 @@ function renderButtons() {
     const card = document.createElement("div");
     card.className = "button-card";
 
+    const row = document.createElement("div");
+    row.className = "button-row";
+
+    const minus = document.createElement("div");
+    minus.className = "small-minus";
+    minus.textContent = "−";
+    minus.dataset.key = btn.key;
+    minus.onclick = () => decrement(btn.key);
+
     const circle = document.createElement("div");
     circle.className = "circle-btn";
     circle.dataset.key = btn.key;
-
-    const count = document.createElement("span");
-    count.className = "count";
-    count.textContent = state.counts[btn.key];
-
-    circle.appendChild(count);
+    const span = document.createElement("span");
+    span.className = "count";
+    span.textContent = state.counts[btn.key] || 0;
+    circle.appendChild(span);
     circle.onclick = () => increment(btn.key);
+
+    row.appendChild(minus);
+    row.appendChild(circle);
 
     const label = document.createElement("div");
     label.className = "label";
     label.textContent = btn.label;
 
-    card.appendChild(circle);
+    card.appendChild(row);
     card.appendChild(label);
     grid.appendChild(card);
   });
@@ -317,7 +384,6 @@ function renderButtons() {
 
 function renderTotals() {
   const { totalUnits, presented, objetivo } = computeTotals();
-
   document.getElementById("total-unidades-box").textContent = totalUnits;
   document.getElementById("presentados-box").textContent = presented;
 
@@ -326,43 +392,44 @@ function renderTotals() {
   objBox.classList.toggle("ok", objetivo >= 0);
   objBox.classList.toggle("bad", objetivo < 0);
 
-  document.getElementById("count-presentado").textContent =
-    state.counts.presentado;
+  document.getElementById("count-presentado").textContent = state.counts.presentado || 0;
+
+  // Actualizar contadores de botones naranjas
+  buttons.forEach(btn => {
+    const el = document.querySelector(
+      `.circle-btn[data-key="${btn.key}"] .count`
+    );
+    if (el) el.textContent = state.counts[btn.key] || 0;
+  });
 }
 
 function render() {
   renderTotals();
-  buttons.forEach(btn => {
-    const el = document.querySelector(`.circle-btn[data-key="${btn.key}"] .count`);
-    if (el) el.textContent = state.counts[btn.key];
-  });
 }
 
-/* ---- ACCIONES --- */
+/* ---- ACCIONES ---- */
 
 function increment(key) {
-  state.counts[key]++;
-  state.history.push(key);
+  state.counts[key] = (state.counts[key] || 0) + 1;
   saveState();
   render();
 }
 
-function undoLast() {
-  if (!state.history.length) return;
-  const key = state.history.pop();
-  if (state.counts[key] > 0) state.counts[key]--;
+function decrement(key) {
+  if (!state.counts[key]) return;
+  state.counts[key] = Math.max(0, state.counts[key] - 1);
   saveState();
   render();
 }
 
 function clearAll() {
-  if (!confirm("¿Seguro que quieres borrar todos los datos?")) return;
+  if (!confirm("¿Seguro que quieres borrar todos los datos y empezar de cero?")) return;
   initState();
   saveState();
   render();
 }
 
-/* ---- ARRANQUE --- */
+/* ---- ARRANQUE ---- */
 
 function main() {
   loadState();
@@ -370,8 +437,12 @@ function main() {
   render();
 
   document.getElementById("btn-presentado").onclick = () => increment("presentado");
-  document.getElementById("undo-btn").onclick = undoLast;
+  document.getElementById("minus-presentado").onclick = () => decrement("presentado");
   document.getElementById("clear-btn").onclick = clearAll;
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  }
 }
 
 main();
