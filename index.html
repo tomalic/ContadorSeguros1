@@ -32,7 +32,7 @@
 
     .app {
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       background: #fff;
       border-radius: 24px;
       padding: 16px;
@@ -76,7 +76,7 @@
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.18);
       user-select: none;
-      margin-right: -18px; /* solapado con el círculo grande */
+      margin-right: -18px;
       z-index: 1;
       transition: transform 0.1s ease;
     }
@@ -179,7 +179,7 @@
     .actions-row {
       display: flex;
       justify-content: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .clear-btn {
@@ -209,6 +209,7 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      margin-bottom: 18px;
     }
 
     .total-row {
@@ -229,6 +230,78 @@
 
     #objetivo-box.ok { color: #0a7c0a; border-color: #0a7c0a; }
     #objetivo-box.bad { color: #b00020; border-color: #b00020; }
+
+    /* ---- RESUMEN DIARIO ---- */
+    .daily-section {
+      margin-top: 8px;
+    }
+
+    .daily-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .month-label {
+      font-weight: 600;
+    }
+
+    .export-btn {
+      border-radius: 999px;
+      border: 1px solid #222;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: #f0f0f0;
+    }
+
+    .daily-table-wrapper {
+      max-height: 220px;
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    table.daily-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .daily-table thead {
+      position: sticky;
+      top: 0;
+      background: #f0f0f0;
+      z-index: 1;
+    }
+
+    .daily-table th,
+    .daily-table td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #eee;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .daily-table th:first-child,
+    .daily-table td:first-child {
+      text-align: left;
+    }
+
+    .daily-table tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    @media (max-width: 420px) {
+      .daily-table-wrapper { max-height: 180px; }
+      .daily-table th,
+      .daily-table td {
+        padding: 3px 4px;
+      }
+    }
   </style>
 </head>
 
@@ -275,10 +348,34 @@
         <div class="total-box" id="objetivo-box">+0</div>
       </div>
     </div>
+
+    <!-- RESUMEN DIARIO -->
+    <div class="daily-section">
+      <div class="daily-header">
+        <span class="month-label" id="month-label"></span>
+        <button class="export-btn" id="export-btn">Exportar</button>
+      </div>
+      <div class="daily-table-wrapper">
+        <table class="daily-table">
+          <thead>
+            <tr>
+              <th>Día</th>
+              <th>Presentado</th>
+              <th>No presentado</th>
+              <th>Reserva</th>
+              <th>Total unidades</th>
+              <th>Presentados</th>
+              <th>Objetivo</th>
+            </tr>
+          </thead>
+          <tbody id="daily-tbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 <script>
-/* ---- CONFIGURACIÓN ---- */
+/* ---------- CONFIGURACIÓN ---------- */
 
 // Botones "normales" (naranja)
 const buttons = [
@@ -293,34 +390,90 @@ const buttons = [
   { key: "regalo",       label: "Regalo" }
 ];
 
-// Todos estos + presentado cuentan como unidades
-const UNITS_KEYS = ["presentado", ...buttons.map(b => b.key)];
-// Solo el botón "Presentado" cuenta como presentados
+const UNITS_KEYS     = ["presentado", ...buttons.map(b => b.key)];
 const PRESENTED_KEYS = ["presentado"];
 
-const STORAGE_KEY = "segurosCounter_v3";
+const STORAGE_KEY = "segurosCounter_v4";
 
-let state = { counts: {}, history: [] };
+/* Estructura del estado:
+   {
+     counts: {presentado: n, ...}    // acumulado del mes
+     monthId: "YYYY-MM",
+     daily: {
+       "YYYY-MM-DD": { counts: {presentado: n,...} }
+     }
+   }
+*/
+let state = { counts: {}, monthId: "", daily: {} };
 
-function initState() {
-  state.counts = { presentado: 0 };
-  buttons.forEach(b => state.counts[b.key] = 0);
-  state.history = []; // ya no usamos deshacer, pero lo dejamos vacío
+/* ---------- FECHAS ---------- */
+
+function todayDate() {
+  const d = new Date();
+  return d;
+}
+
+function formatDateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatMonthId(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function getCurrentMonthDays() {
+  const d = todayDate();
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const todayDay = d.getDate();
+  return { year, month, todayDay };
+}
+
+/* ---------- ESTADO ---------- */
+
+function emptyCounts() {
+  const obj = { presentado: 0 };
+  buttons.forEach(b => { obj[b.key] = 0; });
+  return obj;
+}
+
+function initStateForCurrentMonth() {
+  const now = todayDate();
+  state = {
+    counts: emptyCounts(),
+    monthId: formatMonthId(now),
+    daily: {}
+  };
 }
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) { initState(); return; }
+  const now = todayDate();
+  const currentMonthId = formatMonthId(now);
+
+  if (!raw) {
+    initStateForCurrentMonth();
+    return;
+  }
+
   try {
     const parsed = JSON.parse(raw);
-    initState();
-    Object.keys(state.counts).forEach(k => {
-      if (parsed.counts && typeof parsed.counts[k] === "number" && parsed.counts[k] >= 0) {
-        state.counts[k] = parsed.counts[k];
-      }
-    });
+    if (!parsed.monthId || parsed.monthId !== currentMonthId) {
+      // Mes nuevo -> reseteamos todo
+      initStateForCurrentMonth();
+      return;
+    }
+    // Mes actual: recuperamos asegurando claves
+    state.monthId = parsed.monthId;
+    state.counts  = { ...emptyCounts(), ...(parsed.counts || {}) };
+    state.daily   = parsed.daily || {};
   } catch {
-    initState();
+    initStateForCurrentMonth();
   }
 }
 
@@ -328,20 +481,36 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-/* ---- CÁLCULOS ---- */
+function ensureTodayDaily() {
+  const key = formatDateKey(todayDate());
+  if (!state.daily[key]) {
+    state.daily[key] = { counts: emptyCounts() };
+  }
+  return key;
+}
 
-function computeTotals() {
+/* ---------- CÁLCULOS ---------- */
+
+function computeTotalsFromCounts(countsObj) {
   let totalUnits = 0;
   let presented = 0;
 
-  UNITS_KEYS.forEach(k => { totalUnits += state.counts[k] || 0; });
-  PRESENTED_KEYS.forEach(k => { presented += state.counts[k] || 0; });
+  UNITS_KEYS.forEach(k => {
+    totalUnits += countsObj[k] || 0;
+  });
+  PRESENTED_KEYS.forEach(k => {
+    presented += countsObj[k] || 0;
+  });
 
   const objetivo = 2 * presented - totalUnits;
   return { totalUnits, presented, objetivo };
 }
 
-/* ---- RENDER ---- */
+function computeMonthlyTotals() {
+  return computeTotalsFromCounts(state.counts);
+}
+
+/* ---------- RENDER BOTONES Y TOTALES ---------- */
 
 function renderButtons() {
   const grid = document.getElementById("buttons-grid");
@@ -357,7 +526,6 @@ function renderButtons() {
     const minus = document.createElement("div");
     minus.className = "small-minus";
     minus.textContent = "−";
-    minus.dataset.key = btn.key;
     minus.onclick = () => decrement(btn.key);
 
     const circle = document.createElement("div");
@@ -383,7 +551,7 @@ function renderButtons() {
 }
 
 function renderTotals() {
-  const { totalUnits, presented, objetivo } = computeTotals();
+  const { totalUnits, presented, objetivo } = computeMonthlyTotals();
   document.getElementById("total-unidades-box").textContent = totalUnits;
   document.getElementById("presentados-box").textContent = presented;
 
@@ -392,9 +560,9 @@ function renderTotals() {
   objBox.classList.toggle("ok", objetivo >= 0);
   objBox.classList.toggle("bad", objetivo < 0);
 
-  document.getElementById("count-presentado").textContent = state.counts.presentado || 0;
+  document.getElementById("count-presentado").textContent =
+    state.counts.presentado || 0;
 
-  // Actualizar contadores de botones naranjas
   buttons.forEach(btn => {
     const el = document.querySelector(
       `.circle-btn[data-key="${btn.key}"] .count`
@@ -403,42 +571,180 @@ function renderTotals() {
   });
 }
 
-function render() {
-  renderTotals();
+/* ---------- RENDER TABLA DIARIA ---------- */
+
+function renderDailyTable() {
+  const { year, month, todayDay } = getCurrentMonthDays();
+  const tbody = document.getElementById("daily-tbody");
+  tbody.innerHTML = "";
+
+  // Etiqueta del mes
+  const monthLabel = document.getElementById("month-label");
+  const monthName = new Date(year, month, 1).toLocaleString("es-ES", {
+    month: "long",
+    year: "numeric"
+  });
+  monthLabel.textContent = `Resumen diario · ${monthName}`;
+
+  for (let day = 1; day <= todayDay; day++) {
+    const d = new Date(year, month, day);
+    const key = formatDateKey(d);
+    const dayCounts = state.daily[key]?.counts || emptyCounts();
+    const { totalUnits, presented, objetivo } = computeTotalsFromCounts(dayCounts);
+
+    const tr = document.createElement("tr");
+
+    const tdDia = document.createElement("td");
+    tdDia.textContent = day.toString().padStart(2, "0");
+
+    const tdPres   = document.createElement("td");
+    const tdNoPres = document.createElement("td");
+    const tdRes    = document.createElement("td");
+
+    tdPres.textContent   = dayCounts.presentado   || 0;
+    tdNoPres.textContent = dayCounts.noPresentado || 0;
+    tdRes.textContent    = dayCounts.reserva      || 0;
+
+    const tdTotal = document.createElement("td");
+    const tdPresentados = document.createElement("td");
+    const tdObjetivo = document.createElement("td");
+
+    tdTotal.textContent       = totalUnits;
+    tdPresentados.textContent = presented;
+    tdObjetivo.textContent    = (objetivo >= 0 ? "+" : "") + objetivo;
+
+    tr.appendChild(tdDia);
+    tr.appendChild(tdPres);
+    tr.appendChild(tdNoPres);
+    tr.appendChild(tdRes);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdPresentados);
+    tr.appendChild(tdObjetivo);
+
+    tbody.appendChild(tr);
+  }
 }
 
-/* ---- ACCIONES ---- */
+/* ---------- ACCIONES ---------- */
 
 function increment(key) {
   state.counts[key] = (state.counts[key] || 0) + 1;
+
+  const todayKey = ensureTodayDaily();
+  const dayCounts = state.daily[todayKey].counts;
+  dayCounts[key] = (dayCounts[key] || 0) + 1;
+
   saveState();
-  render();
+  renderTotals();
+  renderDailyTable();
 }
 
 function decrement(key) {
   if (!state.counts[key]) return;
-  state.counts[key] = Math.max(0, state.counts[key] - 1);
+
+  state.counts[key] = Math.max(0, (state.counts[key] || 0) - 1);
+
+  const todayKey = ensureTodayDaily();
+  const dayCounts = state.daily[todayKey].counts;
+  dayCounts[key] = Math.max(0, (dayCounts[key] || 0) - 1);
+
   saveState();
-  render();
+  renderTotals();
+  renderDailyTable();
 }
 
 function clearAll() {
-  if (!confirm("¿Seguro que quieres borrar todos los datos y empezar de cero?")) return;
-  initState();
+  if (!confirm("¿Seguro que quieres borrar todos los datos de este mes y empezar de cero?")) return;
+  initStateForCurrentMonth();
   saveState();
-  render();
+  renderButtons();
+  renderTotals();
+  renderDailyTable();
 }
 
-/* ---- ARRANQUE ---- */
+/* ---------- EXPORTAR CSV ---------- */
+
+function exportCSV() {
+  const { year, month, todayDay } = getCurrentMonthDays();
+  const monthName = new Date(year, month, 1).toLocaleString("es-ES", {
+    month: "long",
+    year: "numeric"
+  });
+
+  const header = [
+    "Fecha",
+    "Presentado",
+    "No presentado",
+    "Reserva",
+    "No lo quiere",
+    "Ticket",
+    "Extranjero",
+    "Rescisión",
+    "Abono",
+    "Factura",
+    "Regalo",
+    "Total unidades",
+    "Presentados",
+    "Objetivo"
+  ];
+
+  const rows = [];
+  rows.push(header.join(";"));
+
+  for (let day = 1; day <= todayDay; day++) {
+    const d = new Date(year, month, day);
+    const key = formatDateKey(d);
+    const dayCounts = state.daily[key]?.counts || emptyCounts();
+    const { totalUnits, presented, objetivo } = computeTotalsFromCounts(dayCounts);
+
+    const fecha = key; // YYYY-MM-DD
+
+    const row = [
+      fecha,
+      dayCounts.presentado   || 0,
+      dayCounts.noPresentado || 0,
+      dayCounts.reserva      || 0,
+      dayCounts.noLoQuiere   || 0,
+      dayCounts.ticket       || 0,
+      dayCounts.extranjero   || 0,
+      dayCounts.rescicion    || 0,
+      dayCounts.abono        || 0,
+      dayCounts.factura      || 0,
+      dayCounts.regalo       || 0,
+      totalUnits,
+      presented,
+      objetivo
+    ];
+
+    rows.push(row.join(";"));
+  }
+
+  const csvContent = rows.join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  const fname = `recuento_seguros_${monthName.replace(/\s+/g,"_")}.csv`;
+  link.download = fname;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- ARRANQUE ---------- */
 
 function main() {
   loadState();
   renderButtons();
-  render();
+  renderTotals();
+  renderDailyTable();
 
   document.getElementById("btn-presentado").onclick = () => increment("presentado");
   document.getElementById("minus-presentado").onclick = () => decrement("presentado");
   document.getElementById("clear-btn").onclick = clearAll;
+  document.getElementById("export-btn").onclick = exportCSV;
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
