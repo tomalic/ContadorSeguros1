@@ -17,6 +17,11 @@
       --amarillo-oscuro: #cfa12a;
       --rojo: #e4573d;
       --gris-fondo: #f5f5f5;
+
+      /* colores fondo según objetivo */
+      --fondo-verde:   #d8f5d1; /* objetivo > 3 */
+      --fondo-naranja: #ffe7c0; /* 0 a 3 */
+      --fondo-rosado:  #ffd6d6; /* ≤ 0 */
     }
 
     * { box-sizing: border-box; }
@@ -33,10 +38,11 @@
     .app {
       width: 100%;
       max-width: 520px;
-      background: #fff;
+      background: var(--fondo-verde); /* valor por defecto, luego JS lo actualiza */
       border-radius: 24px;
       padding: 16px;
       box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+      transition: background-color 0.25s ease;
     }
 
     .title {
@@ -47,6 +53,7 @@
       border: 3px solid black;
       border-radius: 999px;
       padding: 10px;
+      background: #fff;
     }
 
     /* ---- BOTÓN PRINCIPAL PRESENTADO ---- */
@@ -79,6 +86,7 @@
       margin-right: -18px;
       z-index: 1;
       transition: transform 0.1s ease;
+      background-clip: padding-box;
     }
 
     .minus-btn:active { transform: scale(0.95); }
@@ -148,6 +156,7 @@
       z-index: 1;
       box-shadow: 0 3px 8px rgba(0,0,0,0.18);
       transition: transform 0.1s ease;
+      background-clip: padding-box;
     }
 
     .small-minus:active { transform: scale(0.95); }
@@ -210,6 +219,9 @@
       flex-direction: column;
       gap: 14px;
       margin-bottom: 18px;
+      background: #ffffffd8;
+      border-radius: 16px;
+      padding: 10px 12px;
     }
 
     .total-row {
@@ -226,6 +238,7 @@
       font-weight: 700;
       border-radius: 999px;
       border: 3px solid black;
+      background: #fff;
     }
 
     #objetivo-box.ok { color: #0a7c0a; border-color: #0a7c0a; }
@@ -234,6 +247,9 @@
     /* ---- RESUMEN DIARIO ---- */
     .daily-section {
       margin-top: 8px;
+      background: #ffffffd8;
+      border-radius: 16px;
+      padding: 8px 10px 10px;
     }
 
     .daily-header {
@@ -245,9 +261,7 @@
       font-weight: 600;
     }
 
-    .month-label {
-      font-weight: 600;
-    }
+    .month-label { font-weight: 600; }
 
     .export-btn {
       border-radius: 999px;
@@ -263,6 +277,7 @@
       overflow: auto;
       border-radius: 10px;
       border: 1px solid #ddd;
+      background: #fff;
     }
 
     table.daily-table {
@@ -406,8 +421,7 @@ let state = { counts: {}, monthId: "", daily: {} };
 /* ---------- FECHAS ---------- */
 
 function todayDate() {
-  const d = new Date();
-  return d;
+  return new Date();
 }
 
 function formatDateKey(d) {
@@ -465,7 +479,6 @@ function loadState() {
       initStateForCurrentMonth();
       return;
     }
-    // Mes actual: recuperamos asegurando claves
     state.monthId = parsed.monthId;
     state.counts  = { ...emptyCounts(), ...(parsed.counts || {}) };
     state.daily   = parsed.daily || {};
@@ -505,6 +518,21 @@ function computeTotalsFromCounts(countsObj) {
 
 function computeMonthlyTotals() {
   return computeTotalsFromCounts(state.counts);
+}
+
+/* Cambia el color de fondo de la tarjeta según el objetivo */
+function updateBackgroundByObjective() {
+  const { objetivo } = computeMonthlyTotals();
+  const app = document.querySelector(".app");
+  if (!app) return;
+
+  if (objetivo > 3) {
+    app.style.backgroundColor = "var(--fondo-verde)";
+  } else if (objetivo >= 0 && objetivo <= 3) {
+    app.style.backgroundColor = "var(--fondo-naranja)";
+  } else {
+    app.style.backgroundColor = "var(--fondo-rosado)";
+  }
 }
 
 /* ---------- RENDER BOTONES Y TOTALES ---------- */
@@ -566,6 +594,8 @@ function renderTotals() {
     );
     if (el) el.textContent = state.counts[btn.key] || 0;
   });
+
+  updateBackgroundByObjective();
 }
 
 /* ---------- RENDER TABLA DIARIA ---------- */
@@ -575,7 +605,6 @@ function renderDailyTable() {
   const tbody = document.getElementById("daily-tbody");
   tbody.innerHTML = "";
 
-  // Etiqueta del mes
   const monthLabel = document.getElementById("month-label");
   const monthName = new Date(year, month, 1).toLocaleString("es-ES", {
     month: "long",
@@ -606,7 +635,6 @@ function renderDailyTable() {
     tr.appendChild(tdTotal);
     tr.appendChild(tdPresentados);
     tr.appendChild(tdObjetivo);
-
 
     tbody.appendChild(tr);
   }
@@ -728,10 +756,10 @@ function main() {
   renderTotals();
   renderDailyTable();
 
-  document.getElementById("btn-presentado").onclick = () => increment("presentado");
+  document.getElementById("btn-presentado").onclick   = () => increment("presentado");
   document.getElementById("minus-presentado").onclick = () => decrement("presentado");
-  document.getElementById("clear-btn").onclick = clearAll;
-  document.getElementById("export-btn").onclick = exportCSV;
+  document.getElementById("clear-btn").onclick        = clearAll;
+  document.getElementById("export-btn").onclick       = exportCSV;
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
