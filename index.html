@@ -360,9 +360,6 @@
           <thead>
             <tr>
               <th>Día</th>
-              <th>Presentado</th>
-              <th>No presentado</th>
-              <th>Reserva</th>
               <th>Total unidades</th>
               <th>Presentados</th>
               <th>Objetivo</th>
@@ -597,14 +594,6 @@ function renderDailyTable() {
     const tdDia = document.createElement("td");
     tdDia.textContent = day.toString().padStart(2, "0");
 
-    const tdPres   = document.createElement("td");
-    const tdNoPres = document.createElement("td");
-    const tdRes    = document.createElement("td");
-
-    tdPres.textContent   = dayCounts.presentado   || 0;
-    tdNoPres.textContent = dayCounts.noPresentado || 0;
-    tdRes.textContent    = dayCounts.reserva      || 0;
-
     const tdTotal = document.createElement("td");
     const tdPresentados = document.createElement("td");
     const tdObjetivo = document.createElement("td");
@@ -614,12 +603,10 @@ function renderDailyTable() {
     tdObjetivo.textContent    = (objetivo >= 0 ? "+" : "") + objetivo;
 
     tr.appendChild(tdDia);
-    tr.appendChild(tdPres);
-    tr.appendChild(tdNoPres);
-    tr.appendChild(tdRes);
     tr.appendChild(tdTotal);
     tr.appendChild(tdPresentados);
     tr.appendChild(tdObjetivo);
+
 
     tbody.appendChild(tr);
   }
